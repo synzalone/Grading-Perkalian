@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tantangan Master Perkalian</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap');
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f0f9ff;
+            touch-action: manipulation; /* Prevent zoom on double tap */
+            overflow: hidden; /* Prevent scrolling */
+        }
+
+        h1, h2, h3, .fredoka {
+            font-family: 'Fredoka One', cursive;
+        }
+
+        /* Custom Animations */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+        
+        .animate-shake {
+            animation: shake 0.4s ease-in-out;
+            background-color: #fca5a5 !important; /* red-300 */
+        }
+
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .animate-pop {
+            animation: pop 0.3s ease-out;
+            background-color: #bbf7d0 !important; /* green-200 */
+        }
+
+        @keyframes combo-scale {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .combo-anim {
+            animation: combo-scale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Button Press Effect */
+        .btn-press:active {
+            transform: scale(0.95) translateY(2px);
+            box-shadow: none;
+        }
+        
+        .numpad-btn {
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+            transition: all 0.1s;
+        }
+        
+        .numpad-btn:active {
+            box-shadow: 0 0px 0 rgba(0,0,0,0.2);
+            transform: translateY(4px);
+        }
+
+        /* Timer Bar */
+        .timer-gradient {
+            background: linear-gradient(90deg, #ef4444 0%, #eab308 50%, #22c55e 100%);
+            background-size: 200% 100%;
+            transition: width 0.1s linear, background-position 0.1s linear;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex items-center justify-center bg-blue-100 text-slate-800">
+
+    <!-- APP CONTAINER -->
+    <div id="app" class="relative w-full max-w-md h-full max-h-[850px] bg-white sm:rounded-3xl sm:shadow-2xl overflow-hidden flex flex-col">
+        
+        <!-- ================= START SCREEN ================= -->
+        <div id="start-screen" class="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-b from-blue-400 to-blue-600 text-white z-20 text-center">
+            <div class="text-6xl mb-4">🚀</div>
+            <h1 class="text-4xl leading-tight mb-2 drop-shadow-md">Tantangan<br>Master Perkalian!</h1>
+            <p class="text-blue-100 mb-10 text-lg font-bold">Taklukkan 20 soal secepat kilat!</p>
+            
+            <div class="bg-white/20 p-4 rounded-2xl mb-10 text-sm text-left w-full">
+                <p class="mb-2">⏱️ <strong>7 Detik</strong> per soal.</p>
+                <p class="mb-2">🔥 <strong>Combo</strong> untuk skor ekstra!</p>
+                <p>🎯 Tembus kecepatan <strong>&lt; 3 Detik</strong> untuk jadi MASTER!</p>
+            </div>
+
+            <button onclick="startGame()" class="fredoka bg-yellow-400 hover:bg-yellow-300 text-yellow-900 text-3xl py-4 px-10 rounded-full shadow-[0_6px_0_#ca8a04] active:shadow-[0_0px_0_#ca8a04] active:translate-y-[6px] transition-all w-full">
+                MULAI MAIN
+            </button>
+        </div>
+
+        <!-- ================= GAME SCREEN ================= -->
+        <div id="game-screen" class="hidden absolute inset-0 flex flex-col bg-slate-50 z-10">
+            <!-- Header: Stats -->
+            <div class="flex justify-between items-center p-4 bg-white shadow-sm rounded-b-3xl z-10">
+                <div class="text-lg font-black text-blue-600 bg-blue-100 px-3 py-1 rounded-xl" id="question-counter">1/20</div>
+                <div id="combo-display" class="text-xl font-black text-orange-500 opacity-0 transform scale-50">🔥 Combo x2!</div>
+            </div>
+
+            <!-- Timer Bar -->
+            <div class="w-full h-3 bg-gray-200">
+                <div id="timer-bar" class="h-full timer-gradient w-full" style="background-position: 100% 0%;"></div>
+            </div>
+
+            <!-- Question Area -->
+            <div id="question-area" class="flex-1 flex flex-col items-center justify-center p-6 transition-colors duration-300">
+                <div class="text-2xl text-slate-500 font-bold mb-2 text-center" id="question-feedback">&nbsp;</div>
+                <div class="text-6xl sm:text-7xl fredoka text-slate-800 tracking-wider mb-6 flex items-center justify-center">
+                    <span id="num1">7</span>
+                    <span class="text-4xl sm:text-5xl text-slate-400 mx-3">x</span>
+                    <span id="num2">8</span>
+                </div>
+                <!-- Input Display -->
+                <div class="w-48 h-20 bg-slate-100 rounded-2xl border-4 border-slate-200 flex items-center justify-center text-5xl fredoka text-blue-600 overflow-hidden shadow-inner">
+                    <span id="answer-input"></span>
+                    <span id="cursor" class="animate-pulse w-1 h-10 bg-blue-400 ml-1"></span>
+                </div>
+            </div>
+
+            <!-- Numpad -->
+            <div class="bg-white p-4 pb-8 sm:pb-4 rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+                <div class="grid grid-cols-3 gap-3">
+                    <button onclick="inputDigit(1)" class="numpad-btn bg-blue-50 text-blue-600 text-3xl font-black py-4 rounded-2xl">1</button>
+                    <button onclick="inputDigit(2)" class="numpad-btn bg-blue-50 text-blue-600 text-3xl font-black py-4 rounded-2xl">2</button>
+                    <button onclick="inputDigit(3)" class="numpad-btn bg-blue-50 text-blue-600 text-3xl font-black py-4 rounded-2xl">3</button>
+                    <button onclick="inputDigit(4)" class="numpad-btn bg-blue-50 text-blue-600 text-3xl font-black py-4 rounded-2xl">4</button>
+                    <button onclick="inputDigit(5)" class="numpad-btn bg-blue-50 text-blue-600 text-3xl font-black py-4 rounded-2xl">5</button>
+                    <button onclick="inputDigit(6)" class="numpad-btn bg-blue-50 text-blue-600 text-3xl font-black py-4 rounded-2xl">6</button>
+                    <button onclick="inputDigit(7)" class="numpad-btn bg-blue-50 text-blue-600 text-3xl font-black py-4 rounded-2xl">7</button>
+                    <button onclick="inputDigit(8)" class="numpad-btn bg-blue-50 text-blue-600 text-3xl font-black py-4 rounded-2xl">8</button>
+                    <button onclick="inputDigit(9)" class="numpad-btn bg-blue-50 text-blue-600 text-3xl font-black py-4 rounded-2xl">9</button>
+                    <button onclick="clearInput()" class="numpad-btn bg-red-100 text-red-500 text-xl font-black py-4 rounded-2xl">HAPUS</button>
+                    <button onclick="inputDigit(0)" class="numpad-btn bg-blue-50 text-blue-600 text-3xl font-black py-4 rounded-2xl">0</button>
+                    <button onclick="submitAnswer()" class="numpad-btn bg-green-400 text-white text-xl font-black py-4 rounded-2xl">JAWAB</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= RESULT SCREEN ================= -->
+        <div id="result-screen" class="hidden absolute inset-0 flex flex-col items-center justify-start p-6 bg-gradient-to-b from-indigo-500 to-purple-600 text-white z-30 overflow-y-auto">
+            <h2 class="text-3xl fredoka mt-6 mb-2">Selesai!</h2>
+            
+            <!-- Medal / Trophy Icon -->
+            <div id="result-icon" class="text-7xl mb-4 drop-shadow-lg">🏆</div>
+            
+            <!-- Grade Title -->
+            <h1 id="grade-title" class="text-4xl fredoka text-yellow-300 text-center mb-6 drop-shadow-md leading-tight">MASTER PERKALIAN!</h1>
+            
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-2 gap-4 w-full mb-6">
+                <div class="bg-white/20 p-4 rounded-2xl text-center">
+                    <div class="text-sm text-indigo-100 font-bold mb-1">Akurasi</div>
+                    <div class="text-3xl fredoka text-white" id="result-accuracy">100%</div>
+                </div>
+                <div class="bg-white/20 p-4 rounded-2xl text-center">
+                    <div class="text-sm text-indigo-100 font-bold mb-1">Rata-rata Waktu</div>
+                    <div class="text-3xl fredoka text-white" id="result-time">2.5s</div>
+                </div>
+            </div>
+
+            <!-- Weakness Report -->
+            <div class="bg-white text-slate-800 w-full p-5 rounded-2xl shadow-lg mb-8">
+                <h3 class="text-lg font-black text-purple-600 mb-2">Laporan Analisis 📊</h3>
+                <p id="weakness-report" class="text-md font-bold text-slate-600 leading-relaxed">
+                    Luar biasa! Tidak ada titik lemah. Kamu menguasai semuanya!
+                </p>
+            </div>
+
+            <button onclick="returnToStart()" class="fredoka bg-yellow-400 hover:bg-yellow-300 text-yellow-900 text-2xl py-4 px-10 rounded-full shadow-[0_6px_0_#ca8a04] active:shadow-[0_0px_0_#ca8a04] active:translate-y-[6px] transition-all w-full mt-auto mb-4">
+                MAIN LAGI
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Game Configuration ---
+        const TOTAL_QUESTIONS = 20;
+        const TIME_LIMIT_MS = 7000; 
+
+        // --- Game State ---
+        let currentQuestionIndex = 0;
+        let questions = [];
+        let currentInput = "";
+        let combo = 0;
+        
+        let timerStart = 0;
+        let timerRAF = null;
+        let isAnswering = false;
+
+        // Stats tracking
+        let correctAnswers = 0;
+        let totalAnsweredTime = 0; // Only for questions answered (correct or wrong before timeout)
+        let questionsAnsweredCount = 0;
+        let factorMistakes = {}; // Track mistakes for numbers 2-11
+
+        // --- Audio System (Web Audio API) ---
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playTone(freq, type, duration) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playSoundCorrect() {
+            playTone(600, 'sine', 0.1);
+            setTimeout(() => playTone(800, 'sine', 0.15), 100);
+        }
+
+        function playSoundWrong() {
+            playTone(200, 'sawtooth', 0.3);
+            setTimeout(() => playTone(150, 'sawtooth', 0.4), 150);
+        }
+
+        function playSoundWin() {
+            [400, 500, 600, 800].forEach((freq, i) => {
+                setTimeout(() => playTone(freq, 'square', 0.2), i * 150);
+            });
+        }
+
+        // --- UI Elements ---
+        const screens = {
+            start: document.getElementById('start-screen'),
+            game: document.getElementById('game-screen'),
+            result: document.getElementById('result-screen')
+        };
+        
+        const ui = {
+            num1: document.getElementById('num1'),
+            num2: document.getElementById('num2'),
+            input: document.getElementById('answer-input'),
+            counter: document.getElementById('question-counter'),
+            timerBar: document.getElementById('timer-bar'),
+            combo: document.getElementById('combo-display'),
+            qArea: document.getElementById('question-area'),
+            feedback: document.getElementById('question-feedback'),
+            cursor: document.getElementById('cursor')
+        };
+
+        // --- Game Logic ---
+        function generateQuestions() {
+            questions = [];
+            for (let i = 0; i < TOTAL_QUESTIONS; i++) {
+                // Generate random numbers 2 to 11
+                const a = Math.floor(Math.random() * 10) + 2; 
+                const b = Math.floor(Math.random() * 10) + 2;
+                questions.push({ a, b, answer: a * b });
+            }
+            
+            // Initialize mistakes tracker
+            for (let i = 2; i <= 11; i++) {
+                factorMistakes[i] = 0;
+            }
+        }
+
+        function switchScreen(screenName) {
+            Object.values(screens).forEach(s => s.classList.add('hidden'));
+            screens[screenName].classList.remove('hidden');
+        }
+
+        function startGame() {
+            initAudio();
+            generateQuestions();
+            
+            currentQuestionIndex = 0;
+            correctAnswers = 0;
+            totalAnsweredTime = 0;
+            questionsAnsweredCount = 0;
+            combo = 0;
+            updateComboUI();
+            
+            switchScreen('game');
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            isAnswering = false;
+            currentInput = "";
+            updateInputDisplay();
+            ui.qArea.className = "flex-1 flex flex-col items-center justify-center p-6 transition-colors duration-300"; // Reset animations
+            ui.feedback.innerHTML = "&nbsp;";
+            ui.feedback.className = "text-2xl font-bold mb-2 text-center text-slate-500";
+            ui.cursor.style.display = 'inline-block';
+            
+            const q = questions[currentQuestionIndex];
+            ui.num1.innerText = q.a;
+            ui.num2.innerText = q.b;
+            ui.counter.innerText = `${currentQuestionIndex + 1}/${TOTAL_QUESTIONS}`;
+            
+            startTimer();
+        }
+
+        // --- Timer System ---
+        function startTimer() {
+            cancelAnimationFrame(timerRAF);
+            timerStart = performance.now();
+            updateTimer();
+        }
+
+        function updateTimer() {
+            if (isAnswering) return; // Stop if already answered
+            
+            const now = performance.now();
+            const elapsed = now - timerStart;
+            let percentLeft = 100 - ((elapsed / TIME_LIMIT_MS) * 100);
+            
+            if (percentLeft <= 0) {
+                percentLeft = 0;
+                ui.timerBar.style.width = '0%';
+                handleTimeout();
+                return;
+            }
+            
+            ui.timerBar.style.width = `${percentLeft}%`;
+            
+            // Update color based on percentage
+            ui.timerBar.style.backgroundPosition = `${percentLeft}% 0%`;
+            
+            timerRAF = requestAnimationFrame(updateTimer);
+        }
+
+        // --- Input Handling ---
+        function inputDigit(digit) {
+            if (isAnswering) return;
+            if (currentInput.length < 3) { // Max 3 digits (11x11 = 121)
+                currentInput += digit;
+                updateInputDisplay();
+            }
+        }
+
+        function clearInput() {
+            if (isAnswering) return;
+            currentInput = currentInput.slice(0, -1);
+            updateInputDisplay();
+        }
+
+        function updateInputDisplay() {
+            ui.input.innerText = currentInput;
+            // hide cursor if there is input for better look, or keep it
+            ui.cursor.style.display = currentInput.length > 0 ? 'none' : 'inline-block';
+        }
+
+        // Add keyboard support
+        window.addEventListener('keydown', (e) => {
+            if (screens.game.classList.contains('hidden') || isAnswering) return;
+            
+            if (e.key >= '0' && e.key <= '9') {
+                inputDigit(e.key);
+            } else if (e.key === 'Backspace') {
+                clearInput();
+            } else if (e.key === 'Enter') {
+                submitAnswer();
+            }
+        });
+
+        // --- Answer Evaluation ---
+        function submitAnswer() {
+            if (isAnswering || currentInput === "") return;
+            evaluate(parseInt(currentInput, 10), false);
+        }
+
+        function handleTimeout() {
+            evaluate(null, true);
+        }
+
+        function evaluate(userAnswer, isTimeout) {
+            isAnswering = true;
+            cancelAnimationFrame(timerRAF);
+            ui.cursor.style.display = 'none';
+            
+            const now = performance.now();
+            const timeTaken = (now - timerStart) / 1000; // in seconds
+            const q = questions[currentQuestionIndex];
+            
+            if (!isTimeout) {
+                questionsAnsweredCount++;
+                totalAnsweredTime += timeTaken;
+            }
+
+            const isCorrect = !isTimeout && userAnswer === q.answer;
+
+            if (isCorrect) {
+                correctAnswers++;
+                combo++;
+                playSoundCorrect();
+                
+                ui.qArea.classList.add('animate-pop');
+                ui.feedback.innerText = "Benar! 🎉";
+                ui.feedback.classList.replace('text-slate-500', 'text-green-600');
+                updateComboUI();
+                
+            } else {
+                combo = 0;
+                playSoundWrong();
+                
+                // Track mistake
+                factorMistakes[q.a]++;
+                factorMistakes[q.b]++;
+                
+                ui.qArea.classList.add('animate-shake');
+                ui.feedback.innerText = isTimeout ? "Waktu Habis! ⏰" : `Salah! (Jawaban: ${q.answer})`;
+                ui.feedback.classList.replace('text-slate-500', 'text-red-500');
+                updateComboUI();
+            }
+
+            // Move to next question after delay
+            setTimeout(() => {
+                currentQuestionIndex++;
+                if (currentQuestionIndex < TOTAL_QUESTIONS) {
+                    loadQuestion();
+                } else {
+                    endGame();
+                }
+            }, 1000); // 1 second delay to show feedback
+        }
+
+        function updateComboUI() {
+            if (combo >= 2) {
+                ui.combo.innerText = `🔥 Combo x${combo}!`;
+                
+                // Trigger animation reset
+                ui.combo.classList.remove('combo-anim');
+                void ui.combo.offsetWidth; // trigger reflow
+                ui.combo.classList.add('combo-anim');
+                
+            } else {
+                ui.combo.classList.remove('combo-anim');
+                ui.combo.style.opacity = '0';
+                ui.combo.style.transform = 'scale(0.5)';
+            }
+        }
+
+        // --- End Game & Results ---
+        function endGame() {
+            playSoundWin();
+            
+            const accuracy = Math.round((correctAnswers / TOTAL_QUESTIONS) * 100);
+            
+            // Avoid division by zero if all timed out
+            let avgTime = 0;
+            if (questionsAnsweredCount > 0) {
+                avgTime = totalAnsweredTime / questionsAnsweredCount;
+            } else {
+                avgTime = 7.0; // max time
+            }
+            avgTime = avgTime.toFixed(1);
+
+            // Set Stats UI
+            document.getElementById('result-accuracy').innerText = `${accuracy}%`;
+            document.getElementById('result-time').innerText = `${avgTime}s`;
+
+            // Grading Logic
+            const gradeTitle = document.getElementById('grade-title');
+            const resultIcon = document.getElementById('result-icon');
+            
+            if (accuracy === 100 && parseFloat(avgTime) < 3.0) {
+                gradeTitle.innerText = "MASTER PERKALIAN!";
+                gradeTitle.className = "text-4xl fredoka text-yellow-300 text-center mb-6 drop-shadow-md leading-tight";
+                resultIcon.innerText = "🏆";
+            } else if (accuracy > 80 && parseFloat(avgTime) <= 5.0) {
+                gradeTitle.innerText = "HEBAT! (PRO PLAYER)";
+                gradeTitle.className = "text-4xl fredoka text-green-300 text-center mb-6 drop-shadow-md leading-tight";
+                resultIcon.innerText = "🌟";
+            } else {
+                gradeTitle.innerText = "PEJUANG TANGGUH!";
+                gradeTitle.className = "text-4xl fredoka text-orange-300 text-center mb-6 drop-shadow-md leading-tight";
+                resultIcon.innerText = "💪";
+            }
+
+            // Weakness Logic
+            analyzeWeakness(accuracy);
+
+            switchScreen('result');
+        }
+
+        function analyzeWeakness(accuracy) {
+            const reportEl = document.getElementById('weakness-report');
+            if (accuracy === 100) {
+                reportEl.innerText = "Sempurna! Kecepatan dan ketepatanmu sangat luar biasa. Tidak ada titik lemah!";
+                return;
+            }
+
+            // Find max mistakes
+            let maxMistakes = 0;
+            let weakNumbers = [];
+            
+            for (let num in factorMistakes) {
+                if (factorMistakes[num] > maxMistakes) {
+                    maxMistakes = factorMistakes[num];
+                    weakNumbers = [num];
+                } else if (factorMistakes[num] === maxMistakes && maxMistakes > 0) {
+                    weakNumbers.push(num);
+                }
+            }
+
+            if (weakNumbers.length > 0) {
+                // If there are too many weaknesses, just group them
+                const joinedNums = weakNumbers.slice(0, 3).join(" dan ");
+                reportEl.innerHTML = `Kecepatanmu cukup bagus, tapi sepertinya kamu harus lebih fokus latihan lagi di <span class="text-red-500">perkalian ${joinedNums}</span> ya! Semangat!`;
+            } else {
+                reportEl.innerText = "Terus berlatih untuk meningkatkan kecepatan dan akurasimu!";
+            }
+        }
+
+        function returnToStart() {
+            switchScreen('start');
+        }
+    </script>
+</body>
+</html>
